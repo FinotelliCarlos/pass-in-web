@@ -1,5 +1,6 @@
 import { ReactElement } from "react";
 import { LogoSVG } from "../assets";
+import { NavLink } from "./nav-link";
 
 export const Header = (): ReactElement => {
   return (
@@ -7,12 +8,8 @@ export const Header = (): ReactElement => {
       <img src={LogoSVG} alt="Logo Pass In" className="size-16" />
 
       <nav className="flex items-center gap-5">
-        <a href="" className="font-medium text-sm">
-          Eventos
-        </a>
-        <a href="" className="font-medium text-sm">
-          Participantes
-        </a>
+        <NavLink href="/eventos" title="Eventos" />
+        <NavLink href="/participantes" title="Participantes" />
       </nav>
     </header>
   );
