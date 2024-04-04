@@ -2,7 +2,7 @@ import { MoreHorizontal } from "lucide-react";
 import { ComponentProps, ReactElement } from "react";
 
 interface IconButtonProps extends ComponentProps<"button"> {
-  transparent: boolean;
+  transparent?: boolean;
 }
 
 export const IconButton = ({
