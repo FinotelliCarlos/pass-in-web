@@ -30,12 +30,20 @@ export interface IAttendee {
 }
 
 export const AttendeeList = (): ReactElement => {
-  const [search, setSearch] = useState<string>("");
+  const [search, setSearch] = useState<string>(() => {
+    const url = new URL(window.location.toString());
+
+    if (url.searchParams.has("search")) {
+      return url.searchParams.get("search") ?? "";
+    }
+
+    return "";
+  });
   const [page, setPage] = useState<number>(() => {
     const url = new URL(window.location.toString());
 
     if (url.searchParams.has("page")) {
-      return Number(url.searchParams.get("page"));
+      return Number(url.searchParams.get("page")) ?? 1;
     }
 
     return 1;
@@ -54,8 +62,18 @@ export const AttendeeList = (): ReactElement => {
     setPage(currPage);
   }
 
+  function setCuttentSearch(currSearch: string) {
+    const url = new URL(window.location.toString());
+
+    url.searchParams.set("search", currSearch);
+
+    window.history.pushState({}, "", url);
+
+    setSearch(currSearch);
+  }
+
   function onSearchInputChanged(event: ChangeEvent<HTMLInputElement>) {
-    setSearch(event.currentTarget.value);
+    setCuttentSearch(event.currentTarget.value);
     setCuttentPage(1);
   }
 
