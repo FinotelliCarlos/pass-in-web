@@ -8,8 +8,7 @@ import {
   MoreHorizontal,
   Search,
 } from "lucide-react";
-import { ChangeEvent, ReactElement, useState } from "react";
-import { ATTENDEES_FAKE_DATA } from "../data/attendees";
+import { ChangeEvent, ReactElement, useEffect, useState } from "react";
 import { IconButton } from "./icon-button";
 import { Table } from "./table/table";
 import { TableCell } from "./table/table-cell";
@@ -22,39 +21,87 @@ dayjs.locale("pt-br");
 
 dayjs.extend(relativeTime);
 
+export interface IAttendee {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+  checkedInAt: string;
+}
+
 export const AttendeeList = (): ReactElement => {
   const [search, setSearch] = useState<string>("");
-  const [page, setPage] = useState<number>(1);
+  const [page, setPage] = useState<number>(() => {
+    const url = new URL(window.location.toString());
 
-  const totalPages = Math.ceil(ATTENDEES_FAKE_DATA.length / 10);
+    if (url.searchParams.has("page")) {
+      return Number(url.searchParams.get("page"));
+    }
+
+    return 1;
+  });
+  const [attendees, setAttendees] = useState<IAttendee[]>([]);
+  const [total, setTotal] = useState<number>(0);
+  const totalPages = Math.ceil(total / 10);
+
+  function setCuttentPage(currPage: number) {
+    const url = new URL(window.location.toString());
+
+    url.searchParams.set("page", String(currPage));
+
+    window.history.pushState({}, "", url);
+
+    setPage(currPage);
+  }
 
   function onSearchInputChanged(event: ChangeEvent<HTMLInputElement>) {
     setSearch(event.currentTarget.value);
+    setCuttentPage(1);
   }
 
   function goToFirstPage() {
     if (page >= 2) {
-      setPage(1);
+      setCuttentPage(1);
     }
   }
 
   function goToLastPage() {
     if (page < totalPages) {
-      setPage(totalPages);
+      setCuttentPage(totalPages);
     }
   }
 
   function goToPreviousPage() {
     if (page >= 2) {
-      setPage((prev) => prev - 1);
+      setCuttentPage(page - 1);
     }
   }
 
   function goToNextPage() {
     if (page < totalPages) {
-      setPage((prev) => prev + 1);
+      setCuttentPage(page + 1);
     }
   }
+
+  useEffect(() => {
+    const url = new URL(
+      "http://localhost:3333/events/9e9bd979-9d10-4915-b339-3786b1634f33/attendees"
+    );
+
+    url.searchParams.set("pageIndex", String(page - 1));
+
+    if (search.length > 0) {
+      url.searchParams.set("query", search);
+    }
+
+    fetch(url)
+      .then((response) => response.json())
+      .then((data) => {
+        setAttendees(data.attendees);
+
+        setTotal(data.total);
+      });
+  }, [page, search]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -65,7 +112,7 @@ export const AttendeeList = (): ReactElement => {
           <input
             onChange={onSearchInputChanged}
             type="text"
-            className="bg-transparent flex-1 outline-none h-auto border-0 p-0 text-sm ring-0"
+            className="bg-transparent flex-1 outline-none h-auto border-0 p-0 text-sm ring-0 focus:ring-0"
             placeholder="Buscar participante..."
             value={search}
           />
@@ -89,46 +136,52 @@ export const AttendeeList = (): ReactElement => {
           </tr>
         </thead>
         <tbody>
-          {ATTENDEES_FAKE_DATA.slice((page - 1) * 10, page * 10).map(
-            (attendee) => {
-              return (
-                <TableRow key={attendee.id}>
-                  <TableCell>
-                    <input
-                      type="checkbox"
-                      className="size-4 bg-black/20 rounded border border-white/10"
-                    />
-                  </TableCell>
-                  <TableCell>{attendee.id}</TableCell>
-                  <TableCell>
-                    <div className="flex flex-col gap-1">
-                      <span className="font-semibold text-white">
-                        {attendee.name}
-                      </span>
-                      <span>{attendee.email}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>{dayjs().to(attendee.createdAt)}</TableCell>
-                  <TableCell>{dayjs().to(attendee.checkedInAt)}</TableCell>
-                  <TableCell>
-                    <IconButton transparent>
-                      <MoreHorizontal className="size-4" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              );
-            }
-          )}
+          {attendees.map((attendee) => {
+            return (
+              <TableRow key={attendee.id}>
+                <TableCell>
+                  <input
+                    type="checkbox"
+                    className="size-4 bg-black/20 rounded border border-white/10"
+                  />
+                </TableCell>
+                <TableCell>{attendee.id}</TableCell>
+                <TableCell>
+                  <div className="flex flex-col gap-1">
+                    <span className="font-semibold text-white">
+                      {attendee.name}
+                    </span>
+                    <span>{attendee.email}</span>
+                  </div>
+                </TableCell>
+                <TableCell>{dayjs().to(attendee.createdAt)}</TableCell>
+                <TableCell>
+                  {attendee.checkedInAt === null ? (
+                    <span className="text-red-300">Não fez check-in</span>
+                  ) : (
+                    <span className="text-emerald-300">
+                      {dayjs().to(attendee.checkedInAt)}
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <IconButton transparent>
+                    <MoreHorizontal className="size-4" />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            );
+          })}
         </tbody>
         <tfoot>
           <tr>
             <TableCell colSpan={3}>
-              Mostrando 10 de {ATTENDEES_FAKE_DATA.length} itens
+              Mostrando {attendees.length ?? 0} de {total ?? 0} itens
             </TableCell>
             <TableCell className="text-right" colSpan={3}>
               <div className="gap-8 items-center inline-flex">
                 <span>
-                  Página {page} de {totalPages ?? 0}
+                  Página {page ?? 0} de {totalPages ?? 0}
                 </span>
                 <div className="flex gap-1.5">
                   <IconButton onClick={goToFirstPage} disabled={page <= 1}>
